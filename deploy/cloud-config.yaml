@@ -1,12 +1,12 @@
 #cloud-config
 # Paste ALL of this into the "Cloud config" box when creating the Hetzner server.
-# Change the two lines marked CHANGE THIS first.
+# First change FAMILY_CODE below to your own secret word (no spaces).
 
 write_files:
   - path: /root/wordspot-settings
     permissions: "0600"
     content: |
-      DOMAIN=play.silautron.com         # CHANGE THIS if you want a different address
+      DOMAIN=play.silautron.com         # the web address for the game
       FAMILY_CODE=pancake42             # CHANGE THIS to your own secret family code
 
 ssh_pwauth: false   # nobody can log in over the internet with a password
