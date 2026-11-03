@@ -96,3 +96,17 @@ def test_cards_use_random_angles():
     plan = plan_deck(BUILTIN_DECKS[0]["words"], CardStyle(seed=2), [])
     angles = [w.angle for c in plan.cards for w in c.words]
     assert len({round(a) for a in angles}) > 200  # genuinely varied, not one direction
+
+
+@pytest.mark.parametrize("per_card", [3, 4, 6, 8])
+def test_rectangular_cards_have_upright_words(per_card):
+    words = BUILTIN_DECKS[4]["words"]
+    style = CardStyle(seed=5, card_shape="rect", words_per_card=per_card, bubble_style="soft")
+    plan = plan_deck(words, style, [])
+    assert plan.per_card == per_card
+    assert all(w.angle == 0 for c in plan.cards for w in c.words)
+    sets = [{w.word for w in c.words} for c in plan.cards]
+    assert all(len(a & b) == 1 for a, b in combinations(sets, 2))
+    img = render_card(plan.cards[0], style, 300)
+    assert img.size == (300, 420)
+    assert img.getpixel((150, 210))[3] == 255

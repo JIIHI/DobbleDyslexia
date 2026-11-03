@@ -31,6 +31,8 @@ def test_database_seeds_and_edits(tmp_path):
 
 
 def test_a4_grid():
+    assert grid_for(90, 126) == (2, 2)
+    assert grid_for(62, 62 * 1.4) == (3, 3)
     assert grid_for(90) == (2, 3)
     assert grid_for(62) == (3, 4)
 
@@ -66,3 +68,14 @@ def test_read_word_files(tmp_path):
     wb.active.append(["shop"])
     wb.save(tmp_path / "c.xlsx")
     assert read_word_file(tmp_path / "c.xlsx") == ["ship", "shop"]
+
+
+def test_rectangular_pdf(tmp_path):
+    from wordspot.style import CardStyle
+    db = Database(tmp_path / "t.sqlite3")
+    deck = db.list_decks()[0]
+    style = CardStyle(seed=1, card_shape="rect", card_mm=62, card_border=False)
+    plan = plan_deck(db.get_words(deck.id), style, db.list_layouts())
+    pdf = tmp_path / "rect.pdf"
+    export_pdf(pdf, plan, style, deck.name, card_numbers=list(range(1, 10)))
+    assert pdf.read_bytes()[:4] == b"%PDF"

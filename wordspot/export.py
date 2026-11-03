@@ -19,7 +19,7 @@ from reportlab.pdfgen import canvas
 from wordspot import APP_NAME
 from wordspot.builder import DeckPlan
 from wordspot.render import CardSpec, render_card
-from wordspot.style import CardStyle
+from wordspot.style import RECT_RATIO, CardStyle
 
 PRINT_DPI = 300
 PAGE_MARGIN_MM = 6
@@ -44,10 +44,15 @@ def render_cards(cards: Iterable[CardSpec], style: CardStyle, total: int,
     return out
 
 
-def grid_for(card_mm: float) -> tuple[int, int]:
+def card_height_mm(style: CardStyle) -> float:
+    return style.card_mm * (RECT_RATIO if style.card_shape == "rect" else 1)
+
+
+def grid_for(card_mm: float, card_h_mm: float | None = None) -> tuple[int, int]:
     page_w, page_h = 210, 297
+    card_h_mm = card_h_mm or card_mm
     cols = int((page_w - 2 * PAGE_MARGIN_MM + GAP_MM) // (card_mm + GAP_MM))
-    rows = int((page_h - 2 * PAGE_MARGIN_MM + GAP_MM) // (card_mm + GAP_MM))
+    rows = int((page_h - 2 * PAGE_MARGIN_MM + GAP_MM) // (card_h_mm + GAP_MM))
     return max(1, cols), max(1, rows)
 
 
@@ -56,10 +61,11 @@ def write_pdf(target, images: list[tuple[int, Image.Image]], style: CardStyle,
     """Lay the cards out on A4 pages (centred grid) and save as PDF."""
     page_w, page_h = A4
     d = style.card_mm * mm
-    cols, rows = grid_for(style.card_mm)
+    dh = card_height_mm(style) * mm
+    cols, rows = grid_for(style.card_mm, card_height_mm(style))
     per_page = cols * rows
     grid_w = cols * d + (cols - 1) * GAP_MM * mm
-    grid_h = rows * d + (rows - 1) * GAP_MM * mm
+    grid_h = rows * dh + (rows - 1) * GAP_MM * mm
     x0 = (page_w - grid_w) / 2
     y_top = page_h - (page_h - grid_h) / 2
     pages = max(1, -(-len(images) // per_page))
@@ -72,16 +78,20 @@ def write_pdf(target, images: list[tuple[int, Image.Image]], style: CardStyle,
         for i, (number, img) in enumerate(chunk):
             col, row = i % cols, i // cols
             x = x0 + col * (d + GAP_MM * mm)
-            y = y_top - (row + 1) * d - row * GAP_MM * mm
+            y = y_top - (row + 1) * dh - row * GAP_MM * mm
             buf = io.BytesIO()
             img.save(buf, "PNG")
             buf.seek(0)
-            pdf.drawImage(ImageReader(buf), x, y, d, d, mask="auto")
+            pdf.drawImage(ImageReader(buf), x, y, d, dh, mask="auto")
             if style.cut_guides and not style.card_border:
                 pdf.setStrokeColorRGB(0.75, 0.75, 0.75)
                 pdf.setLineWidth(0.4)
                 pdf.setDash(2, 2)
-                pdf.circle(x + d / 2, y + d / 2, d / 2 - 0.3 * mm)
+                if style.card_shape == "rect":
+                    pdf.roundRect(x + 0.3 * mm, y + 0.3 * mm, d - 0.6 * mm, dh - 0.6 * mm,
+                                  d * 0.06)
+                else:
+                    pdf.circle(x + d / 2, y + d / 2, d / 2 - 0.3 * mm)
                 pdf.setDash()
         pdf.setFont("Helvetica", 8)
         pdf.setFillColorRGB(0.55, 0.55, 0.55)
@@ -121,7 +131,7 @@ def export_zip(path: Path | str, plan: DeckPlan, style: CardStyle, title: str,
         zf.writestr("README.txt", (
             f"{APP_NAME} - {title}\n\n"
             f"{plan.summary()}.\n"
-            f"Each PNG is {style.card_mm} mm across when printed at {PRINT_DPI} dpi.\n"
+            f"Each PNG is {style.card_mm} mm wide when printed at {PRINT_DPI} dpi.\n"
             f"To replace a lost card, print just that PNG at 100% / actual size.\n\n"
             f"Words on each card:\n{words}\n"))
 

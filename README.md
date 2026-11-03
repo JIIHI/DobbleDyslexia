@@ -44,7 +44,11 @@ to a GitHub Release, which gives a simpler download link to share.
 * **Words face every way:** round cards are played from all sides of the
   table, so word angles are always random and spread all the way round each
   card. Every player gets some words facing them.
-* **Download A4 PDF:** all the cards laid out 6 to a page, ready to print and cut.
+* **Round or rectangular cards:** round cards are for group play, with words
+  facing every way. Rectangular cards keep every word upright and the same
+  size, which suits one-to-one work with an adult. They print 4 to a page at
+  the large size, or 9 at the small size.
+* **Download A4 PDF:** all the cards laid out on A4 (6 round cards to a page at the large size), ready to print and cut.
 * **Download ZIP:** every card as its own PNG, plus the PDF. When a card gets
   lost or chewed, just print that one again.
 * **Re-print one card:** right-click any card in the preview. You can also

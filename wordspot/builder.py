@@ -67,6 +67,20 @@ class DeckPlan:
         return msg
 
 
+# Rectangular cards: words sit in a grid of (columns, rows).
+RECT_GRIDS = {8: (2, 4), 6: (2, 3), 4: (2, 2), 3: (1, 3)}
+RECT_GAP = 0.05  # gap between word boxes, as a fraction of the card
+
+
+def rect_boxes(n: int) -> list[tuple[float, float, float, float]]:
+    """(centre x, centre y, width, height) of each word box, as fractions."""
+    cols, rows = RECT_GRIDS[n]
+    w = (1 - RECT_GAP * (cols - 1)) / cols
+    h = (1 - RECT_GAP * (rows - 1)) / rows
+    return [(c * (w + RECT_GAP) + w / 2, r * (h + RECT_GAP) + h / 2, w, h)
+            for r in range(rows) for c in range(cols)]
+
+
 def spread_angles(n: int, rng: random.Random) -> list[float]:
     """Random word angles, spread all the way round the card.
 
@@ -118,6 +132,14 @@ def plan_deck(words: list[str], style: CardStyle, layouts: list[Layout]) -> Deck
     cards = []
     for number, idx in enumerate(card_order, start=1):
         crng = random.Random(f"{seed}:card:{number}")
+        if style.card_shape == "rect":
+            word_ids = template[idx][:]
+            crng.shuffle(word_ids)
+            placed = [PlacedWord(apply_case(chosen[wid], style.letter_case), colours[wid], 0.0,
+                                 x, y, 0.0, w, h)
+                      for wid, (x, y, w, h) in zip(word_ids, rect_boxes(per_card))]
+            cards.append(CardSpec(number, placed))
+            continue
         if pool:
             layout = crng.choice(pool)
         else:

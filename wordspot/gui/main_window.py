@@ -20,7 +20,7 @@ from wordspot.gui.bubble_designer import BubbleDesigner
 from wordspot.gui.widgets import Collapsible, LabeledCombo, ToggleSwitch, section_title
 from wordspot.gui.workers import PreviewWorker, TaskWorker
 from wordspot.render import render_card
-from wordspot.style import (BACKGROUNDS, BUBBLE_SIZES, BUBBLE_STYLES, CARD_SIZES_MM, FONTS,
+from wordspot.style import (BACKGROUNDS, BUBBLE_SIZES, BUBBLE_STYLES, CARD_SHAPES, CARD_SIZES_MM, FONTS,
                             LETTER_CASES, WORD_COLOURS, WORDS_PER_CARD, CardStyle)
 
 THUMB = 230
@@ -238,6 +238,11 @@ class MainWindow(QMainWindow):
 
         lay.addSpacing(6)
         lay.addWidget(section_title("Card"))
+        self.c_shape = LabeledCombo(
+            "Card shape", CARD_SHAPES,
+            tooltip="Round cards are played from every side of the table, so words face every way.\n"
+                    "Rectangular cards keep words upright - good for one-to-one work with an adult.")
+        lay.addWidget(self.c_shape)
         self.c_background = LabeledCombo("Background", BACKGROUNDS,
                                          tooltip="Cream or pastel backgrounds reduce glare for many readers.")
         for i, colour in enumerate(BACKGROUNDS.values()):
@@ -258,14 +263,14 @@ class MainWindow(QMainWindow):
                                     tooltip="Even sizes help children who struggle with very small words.")
         self.t_long_big = ToggleSwitch("Long words in big bubbles")
         self.c_card_mm = LabeledCombo("Printed card size", CARD_SIZES_MM)
-        designer = QPushButton("Bubble Designer...")
+        designer = self.designer_btn = QPushButton("Bubble Designer...")
         designer.clicked.connect(self.open_designer)
         for w in (self.c_sizes, self.t_long_big, self.c_card_mm, designer):
             adv.body_layout.addWidget(w)
         lay.addWidget(adv)
         lay.addStretch(1)
 
-        for combo in (self.c_font, self.c_case, self.c_colours, self.c_background,
+        for combo in (self.c_shape, self.c_font, self.c_case, self.c_colours, self.c_background,
                       self.c_bubbles, self.c_per_card, self.c_sizes, self.c_card_mm):
             combo.changed.connect(self._style_changed)
         for toggle in (self.t_bold, self.t_border, self.t_numbers, self.t_guides, self.t_long_big):
@@ -516,6 +521,7 @@ class MainWindow(QMainWindow):
 
     # ================================================================= style
     def _apply_style_to_controls(self, s: CardStyle) -> None:
+        self.c_shape.set_value(s.card_shape)
         self.c_font.set_value(s.font)
         self.c_case.set_value(s.letter_case)
         self.c_colours.set_value(s.word_colours)
@@ -531,9 +537,11 @@ class MainWindow(QMainWindow):
             toggle.setChecked(value)
             toggle.blockSignals(False)
         self.t_guides.setEnabled(not s.card_border)
+        self._shape_controls(s)
 
     def _style_from_controls(self) -> CardStyle:
         s = CardStyle(seed=self.deck.style.seed if self.deck else 1)
+        s.card_shape = self.c_shape.value()
         s.font = self.c_font.value()
         s.letter_case = self.c_case.value()
         s.word_colours = self.c_colours.value()
@@ -554,8 +562,17 @@ class MainWindow(QMainWindow):
             return
         self.deck.style = self._style_from_controls()
         self.t_guides.setEnabled(not self.deck.style.card_border)
+        self._shape_controls(self.deck.style)
         self.db.save_style(self.deck.id, self.deck.style)
         self.refresh_timer.start()
+
+    def _shape_controls(self, s: CardStyle) -> None:
+        """Bubble layout settings only apply to round cards."""
+        round_card = s.card_shape != "rect"
+        for w in (self.c_sizes, self.t_long_big, self.designer_btn):
+            w.setEnabled(round_card)
+        self.c_bubbles.findChild(QLabel).setText(
+            "Bubbles behind words" if round_card else "Boxes behind words")
 
     def reshuffle(self) -> None:
         if not self.deck:

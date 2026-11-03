@@ -42,6 +42,11 @@ PALETTE = [
     "#374151",  # charcoal
 ]
 
+CARD_SHAPES = {
+    "Round - group play (words face every way)": "round",
+    "Rectangle - one-to-one (words upright)": "rect",
+}
+
 LETTER_CASES = {
     "As typed": "as_typed",
     "lowercase": "lower",
@@ -69,15 +74,19 @@ WORDS_PER_CARD = {
 }
 
 CARD_SIZES_MM = {
-    "Large - 90 mm (6 per page)": 90,
-    "Medium - 80 mm (6 per page)": 80,
-    "Small - 62 mm (12 per page)": 62,
+    "Large - 90 mm wide": 90,
+    "Medium - 80 mm wide": 80,
+    "Small - 62 mm wide": 62,
 }
+
+#: rectangular cards are this many times taller than they are wide
+RECT_RATIO = 1.4
 
 
 @dataclass
 class CardStyle:
     font: str = "opendyslexic"
+    card_shape: str = "round"
     bold: bool = False
     background: str = "#fdf6e3"
     word_colours: str = "colourful"
