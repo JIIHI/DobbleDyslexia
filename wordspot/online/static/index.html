@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Word Spot">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="icon" href="/icon.png">
+<title>Word Spot</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- HOME -->
+<section id="home" class="screen">
+  <div class="home-card">
+    <img src="/icon.png" alt="" class="logo">
+    <h1>Word Spot</h1>
+    <p class="tag">Find the word that is on <b>both</b> cards!</p>
+
+    <label class="field-label" for="name">Your name</label>
+    <input id="name" maxlength="16" autocomplete="off" placeholder="Type your name">
+
+    <div class="field-label">Pick your animal</div>
+    <div id="avatars" class="avatars"></div>
+
+    <div class="home-buttons">
+      <button id="solo" class="big primary">🎯 Play on my own</button>
+      <button id="together" class="big secondary">👫 Play with someone</button>
+    </div>
+    <div class="join-row">
+      <input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="CODE">
+      <button id="join" class="big">Join a game</button>
+    </div>
+    <p id="home-error" class="error"></p>
+  </div>
+</section>
+
+<!-- LOBBY -->
+<section id="lobby" class="screen hidden">
+  <div class="lobby-grid">
+    <div class="panel" id="invite">
+      <h2>Game code</h2>
+      <div id="room-code" class="room-code"></div>
+      <img id="qr" alt="QR code to join" class="qr">
+      <p class="hint">Scan the code with another iPad or phone,<br>or type the code on its Word Spot page.</p>
+      <p class="hint small" id="join-link"></p>
+    </div>
+    <div class="panel">
+      <h2>Players</h2>
+      <ul id="players" class="players"></ul>
+      <div id="settings">
+        <h2>Game</h2>
+        <label class="field-label" for="s-deck">Words</label>
+        <select id="s-deck"></select>
+        <div id="custom-box" class="hidden">
+          <textarea id="s-custom" rows="5" placeholder="Type your own words, one per line (at least 7)"></textarea>
+          <button id="s-custom-use" class="small-btn">Use these words</button>
+          <span id="custom-msg" class="hint"></span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="field-label">Rounds</div>
+            <div class="seg" id="s-rounds">
+              <button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="0">All</button>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Cards</div>
+            <div class="seg" id="s-shape">
+              <button data-v="round">● Round</button><button data-v="rect">▮ Straight</button>
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="field-label">Words on each card</div>
+            <div class="seg" id="s-per">
+              <button data-v="0">Most</button><button data-v="6">6</button><button data-v="4">4</button><button data-v="3">3</button>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Letters</div>
+            <div class="seg" id="s-font">
+              <button data-v="opendyslexic" class="f-od">abc</button><button data-v="lexend" class="f-lx">abc</button><button data-v="andika" class="f-an">abc</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p id="settings-readonly" class="hint hidden"></p>
+      <div class="lobby-buttons">
+        <button id="leave" class="big">← Back</button>
+        <button id="start" class="big primary">Start!</button>
+      </div>
+      <p id="wait-msg" class="hint hidden">Waiting for the first player to press Start…</p>
+    </div>
+  </div>
+</section>
+
+<!-- GAME -->
+<section id="game" class="screen hidden">
+  <header class="game-bar">
+    <div id="round" class="round"></div>
+    <div id="scores" class="scores"></div>
+    <div class="bar-right">
+      <span id="timer" class="timer"></span>
+      <button id="speak-toggle" class="icon-btn" title="Read words aloud">🔊</button>
+      <button id="quit" class="icon-btn" title="Leave game">✕</button>
+    </div>
+  </header>
+  <div id="cards" class="cards">
+    <div class="card-wrap"><svg id="card0" class="card"></svg></div>
+    <div class="card-wrap"><svg id="card1" class="card"></svg></div>
+  </div>
+  <div id="freeze" class="freeze hidden"><div>Look again… 👀</div></div>
+  <div id="banner" class="banner hidden"></div>
+  <button id="hint-btn" class="hint-btn hidden">💡 Hint</button>
+</section>
+
+<!-- RESULTS -->
+<section id="results" class="screen hidden">
+  <div class="home-card">
+    <h1 id="res-title">Well done!</h1>
+    <ol id="res-list" class="res-list"></ol>
+    <p id="res-best" class="best"></p>
+    <div class="home-buttons">
+      <button id="again" class="big primary">Play again</button>
+      <button id="change" class="big secondary">Change game</button>
+      <button id="home-btn" class="big">Home</button>
+    </div>
+    <p id="res-wait" class="hint hidden">Waiting for the first player to start again…</p>
+  </div>
+</section>
+
+<div id="toast" class="toast hidden"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

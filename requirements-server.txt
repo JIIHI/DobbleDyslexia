@@ -1,0 +1,5 @@
+# Word Spot online (web game server)
+Pillow>=10.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
+qrcode>=7.4

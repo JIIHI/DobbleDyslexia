@@ -66,6 +66,44 @@ Decks and settings are kept in a small SQLite database in your user folder:
 * Mac: `~/Library/Application Support/WordSpot/`
 * Windows: `%APPDATA%\WordSpot\`
 
+## Play on iPads, phones and computers (Word Spot online)
+
+Word Spot also runs as a web game, with no app to install.
+
+* **Everyone sees the same two cards.** The first player to tap the one word
+  that is on **both** cards wins the point, then the next pair is dealt.
+* **Play on my own:** one child plays against the clock and tries to beat
+  their personal best.
+* **Play with someone:** the child who starts gets a 4-letter code and a QR
+  code. Other players scan it or type the code. Any number can join, up to 8.
+* A wrong tap freezes that player for 1.5 seconds, so random tapping doesn't
+  pay off.
+* When someone finds the word, every device **reads it aloud**. Tap 🔊 to
+  turn this off.
+* A 💡 hint button appears if nobody finds the word for 15 seconds.
+* Round cards (words face every way) or straight cards (words upright), the
+  three reading fonts, built-in decks or your own word list.
+* Nothing is stored about the children. Games disappear when they finish.
+
+### Run it at home
+
+On the computer, with Python 3 installed:
+
+* **Mac:** double-click `start-online-game.command`
+* **Windows:** double-click `start-online-game.bat`
+* or run `pip install -r requirements-server.txt`, then `python -m wordspot.online`
+
+It prints an address such as `http://192.168.1.20:8000`. Open that in Safari
+or Chrome on each iPad, phone or computer on the same wifi. On an iPad, tap
+*Share*, then *Add to Home Screen*, and it opens like an app. Keep the
+computer awake while the children play.
+
+### Put it online
+
+To play from anywhere, including family in another house, deploy the
+included `Dockerfile` to any host that runs containers, such as Fly.io,
+Render or Railway. The server keeps games in memory and needs no database.
+
 ## Running from source
 
 ```bash
@@ -92,6 +130,7 @@ GitHub Actions builds both.
 | `wordspot/db.py` | SQLite storage |
 | `wordspot/wordlists.py` | Built-in word decks |
 | `wordspot/gui/` | The PySide6 (Qt) interface and Bubble Designer |
+| `wordspot/online/` | The web game: rules (`game.py`), server (`server.py`) and the page (`static/`) |
 | `scripts/` | Regenerate built-in layouts (`generate_layouts.py`) and icons (`make_icon.py`) |
 | `legacy/` | The original R scripts |
 
