@@ -23,6 +23,7 @@ WRONG_FREEZE = 1.5      # seconds a player is frozen after a wrong tap
 SHOW_ANSWER = 2.4       # seconds the found word stays highlighted
 HINT_AFTER = 15         # seconds before the hint button appears
 MAX_PLAYERS = 8
+MAX_ROOMS = 60          # games that can exist at once on one server
 ROOM_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"  # no I or O (look like 1 and 0)
 AVATARS = ["🐶", "🐱", "🦊", "🐸", "🐼", "🐵", "🦁", "🐯", "🐨", "🐰", "🐙", "🦄",
            "🐢", "🐧", "🦖", "🐝"]
@@ -151,7 +152,7 @@ class Room:
             return
         s = self.settings
         if data.get("deck") == "custom":
-            words = clean_words([str(w) for w in data.get("custom_words", [])][:500])
+            words = clean_words([str(w)[:30] for w in data.get("custom_words", [])][:300])
             if len(words) >= 7:
                 s.deck, s.custom_words = "custom", words
         elif deck_words(str(data.get("deck", ""))):
@@ -278,6 +279,10 @@ class Lobby:
         self.rooms: dict[str, Room] = {}
 
     def create(self) -> Room:
+        if len(self.rooms) >= MAX_ROOMS:
+            self.cleanup()
+            if len(self.rooms) >= MAX_ROOMS:
+                raise RuntimeError("The server is busy - please try again in a few minutes.")
         for _ in range(1000):
             code = "".join(secrets.choice(ROOM_LETTERS) for _ in range(4))
             if code not in self.rooms:

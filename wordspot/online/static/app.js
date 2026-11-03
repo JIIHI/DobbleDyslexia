@@ -118,6 +118,9 @@ function buildHome() {
     };
     box.appendChild(b);
   }
+  const saved = localStorage.getItem("ws_family") || "";
+  $("family").value = saved;
+  $("family-box").classList.toggle("hidden", !info.needs_code || !!saved);
   const join = new URLSearchParams(location.search).get("join");
   if (join) $("code").value = join.toUpperCase();
 }
@@ -137,13 +140,34 @@ async function newGame(m) {
   unlockAudio();
   if (!readName()) return;
   mode = m;
+  const family = $("family").value.trim();
+  if (info.needs_code && !family) {
+    $("family-box").classList.remove("hidden");
+    $("home-error").textContent = "Type the family code first.";
+    $("family").focus();
+    return;
+  }
+  let res;
   try {
-    const res = await fetch("/api/rooms", { method: "POST" });
-    const data = await res.json();
-    connect(data.code);
+    res = await fetch("/api/rooms", { method: "POST", headers: { "X-Family-Code": family } });
   } catch (e) {
     $("home-error").textContent = "Can't reach the Word Spot server.";
+    return;
   }
+  if (res.status === 403) {
+    localStorage.removeItem("ws_family");
+    $("family-box").classList.remove("hidden");
+    $("home-error").textContent = "That family code isn't right.";
+    return;
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    $("home-error").textContent = err.detail || "Something went wrong - try again.";
+    return;
+  }
+  if (family) localStorage.setItem("ws_family", family);
+  const data = await res.json();
+  connect(data.code);
 }
 async function joinGame() {
   unlockAudio();

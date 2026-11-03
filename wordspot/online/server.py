@@ -7,15 +7,18 @@ on any phone, tablet or computer on the same wifi.
 from __future__ import annotations
 
 import asyncio
+import hmac
 import io
 import json
+import os
 import socket
 import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from wordspot.layout import Layout
@@ -23,6 +26,53 @@ from wordspot.online.game import AVATARS, Lobby, Room, deck_choices
 from wordspot.paths import data_dir, fonts_dir
 
 STATIC = Path(__file__).resolve().parent / "static"
+
+# Family code: when set, only people who know it can START games (anyone with
+# a 4-letter game code can still join one).  Set it on the host as an
+# environment variable, e.g.  WORDSPOT_ACCESS_CODE=pancake42
+ACCESS_CODE = os.environ.get("WORDSPOT_ACCESS_CODE", "").strip()
+
+MAX_MESSAGE = 16_000          # bytes in one message from a device
+MAX_MSGS_PER_SEC = 15         # per device; more than this and it's disconnected
+
+
+class RateLimiter:
+    """Allows ``limit`` events per ``window`` seconds for each key (IP address)."""
+
+    def __init__(self, limit: int, window: float):
+        self.limit, self.window = limit, window
+        self.hits: dict[str, deque] = defaultdict(deque)
+
+    def allow(self, key: str) -> bool:
+        now = time.time()
+        q = self.hits[key]
+        while q and now - q[0] > self.window:
+            q.popleft()
+        if len(q) >= self.limit:
+            return False
+        q.append(now)
+        if len(self.hits) > 5000:  # forget old visitors
+            for k in [k for k, v in self.hits.items() if not v or now - v[-1] > self.window]:
+                del self.hits[k]
+        return True
+
+
+create_limit = RateLimiter(8, 60)     # new games per IP per minute
+lookup_limit = RateLimiter(30, 60)    # game-code lookups / joins per IP per minute
+code_limit = RateLimiter(10, 300)     # family-code guesses per IP per 5 minutes
+
+
+def client_ip(request) -> str:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "?"
+
+
+def code_ok(given: str | None) -> bool:
+    if not ACCESS_CODE:
+        return True
+    return hmac.compare_digest((given or "").strip().lower().encode(), ACCESS_CODE.lower().encode())
 
 
 def load_layouts() -> list[Layout]:
@@ -88,6 +138,18 @@ async def index() -> FileResponse:
     return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/robots.txt")
+async def robots() -> PlainTextResponse:
+    return PlainTextResponse("User-agent: *\nDisallow: /\n")
+
+
+@app.middleware("http")
+async def no_index(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
+
 @app.get("/manifest.webmanifest")
 async def manifest() -> JSONResponse:
     return JSONResponse({
@@ -110,16 +172,36 @@ async def info(request: Request) -> dict:
         ip = lan_address()
         if ip:
             base = f"{request.url.scheme}://{ip}:{request.url.port or 80}"
-    return {"decks": deck_choices(), "avatars": AVATARS, "join_base": base}
+    return {"decks": deck_choices(), "avatars": AVATARS, "join_base": base,
+            "needs_code": bool(ACCESS_CODE)}
+
+
+@app.post("/api/check-code")
+async def check_code(request: Request) -> dict:
+    if not code_limit.allow(client_ip(request)):
+        raise HTTPException(429, "Too many tries - wait a few minutes.")
+    return {"ok": code_ok(request.headers.get("x-family-code"))}
 
 
 @app.post("/api/rooms")
-async def create_room() -> dict:
-    return {"code": lobby.create().code}
+async def create_room(request: Request) -> dict:
+    ip = client_ip(request)
+    if not code_ok(request.headers.get("x-family-code")):
+        if not code_limit.allow(ip):
+            raise HTTPException(429, "Too many tries - wait a few minutes.")
+        raise HTTPException(403, "Wrong family code.")
+    if not create_limit.allow(ip):
+        raise HTTPException(429, "Too many new games - wait a minute.")
+    try:
+        return {"code": lobby.create().code}
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc))
 
 
 @app.get("/api/rooms/{code}")
-async def room_info(code: str) -> dict:
+async def room_info(code: str, request: Request) -> dict:
+    if not lookup_limit.allow(client_ip(request)):
+        raise HTTPException(429, "Too many tries - wait a minute.")
     room = lobby.get(code)
     if not room:
         raise HTTPException(404, "No game with that code")
@@ -140,6 +222,10 @@ async def qr(data: str) -> Response:
 @app.websocket("/ws/{code}")
 async def play(ws: WebSocket, code: str) -> None:
     await ws.accept()
+    if not lookup_limit.allow(client_ip(ws)):
+        await ws.send_json({"type": "error", "message": "Too many tries - wait a minute."})
+        await ws.close()
+        return
     room = lobby.get(code)
     if not room:
         await ws.send_json({"type": "error", "message": "No game with that code."})
@@ -161,8 +247,19 @@ async def play(ws: WebSocket, code: str) -> None:
     sockets[room.code][player.id] = ws
     await broadcast(room)
     try:
+        recent: deque = deque()
         while True:
-            msg = await ws.receive_json()
+            text = await ws.receive_text()
+            now = time.time()
+            recent.append(now)
+            while recent and now - recent[0] > 1:
+                recent.popleft()
+            if len(text) > MAX_MESSAGE or len(recent) > MAX_MSGS_PER_SEC:
+                await ws.close(code=1008)
+                break
+            msg = json.loads(text)
+            if not isinstance(msg, dict):
+                continue
             kind = msg.get("type")
             if kind == "tap":
                 result = room.tap(player.id, int(msg.get("round", -1)), str(msg.get("word", "")))

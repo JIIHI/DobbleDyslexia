@@ -80,3 +80,47 @@ def test_websocket_game():
                 assert won["phase"] == "answer" and won["answer"] == ans
                 assert [p["score"] for p in won["players"] if p["name"] == "Ava"] == [1]
         assert sa["you"]
+
+
+def test_family_code_and_limits(monkeypatch):
+    from fastapi.testclient import TestClient
+    import wordspot.online.server as srv
+    monkeypatch.setattr(srv, "ACCESS_CODE", "Pancake42")
+    monkeypatch.setattr(srv, "create_limit", srv.RateLimiter(3, 60))
+    monkeypatch.setattr(srv, "code_limit", srv.RateLimiter(100, 60))
+    with TestClient(srv.app) as client:
+        assert client.get("/api/info").json()["needs_code"] is True
+        assert client.post("/api/rooms").status_code == 403
+        assert client.post("/api/rooms", headers={"X-Family-Code": "wrong"}).status_code == 403
+        ok = client.post("/api/rooms", headers={"X-Family-Code": " pancake42 "})
+        assert ok.status_code == 200
+        # joining only needs the game code, not the family code
+        with client.websocket_connect(f"/ws/{ok.json()['code']}?name=Friend") as ws:
+            assert ws.receive_json()["phase"] == "lobby"
+        for _ in range(2):
+            client.post("/api/rooms", headers={"X-Family-Code": "pancake42"})
+        assert client.post("/api/rooms", headers={"X-Family-Code": "pancake42"}).status_code == 429
+        assert client.get("/robots.txt").text.startswith("User-agent")
+
+
+def test_message_flood_disconnects():
+    from fastapi.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+    import wordspot.online.server as srv
+    with TestClient(srv.app) as client:
+        code = client.post("/api/rooms").json()["code"]
+        with client.websocket_connect(f"/ws/{code}?name=Spam") as ws:
+            ws.receive_json()
+            with pytest.raises(WebSocketDisconnect):
+                for _ in range(200):
+                    ws.send_json({"type": "ping"})
+                    ws.receive_json()
+
+
+def test_room_cap():
+    from wordspot.online import game
+    lobby = Lobby(load_layouts())
+    for _ in range(game.MAX_ROOMS):
+        lobby.create().add_player("x", "🐶")
+    with pytest.raises(RuntimeError):
+        lobby.create()
