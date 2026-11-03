@@ -21,7 +21,7 @@ from wordspot.gui.widgets import Collapsible, LabeledCombo, ToggleSwitch, sectio
 from wordspot.gui.workers import PreviewWorker, TaskWorker
 from wordspot.render import render_card
 from wordspot.style import (BACKGROUNDS, BUBBLE_SIZES, BUBBLE_STYLES, CARD_SIZES_MM, FONTS,
-                            LETTER_CASES, ROTATIONS, WORD_COLOURS, WORDS_PER_CARD, CardStyle)
+                            LETTER_CASES, WORD_COLOURS, WORDS_PER_CARD, CardStyle)
 
 THUMB = 230
 
@@ -232,10 +232,8 @@ class MainWindow(QMainWindow):
                                    tooltip="OpenDyslexic, Lexend and Andika are designed to be easier to read.")
         self.c_case = LabeledCombo("Letters", LETTER_CASES)
         self.c_colours = LabeledCombo("Word colours", WORD_COLOURS)
-        self.c_rotation = LabeledCombo("Word angles", ROTATIONS,
-                                       tooltip="Upside-down words make the game harder.")
         self.t_bold = ToggleSwitch("Bold words")
-        for w in (self.c_font, self.c_case, self.c_colours, self.c_rotation, self.t_bold):
+        for w in (self.c_font, self.c_case, self.c_colours, self.t_bold):
             lay.addWidget(w)
 
         lay.addSpacing(6)
@@ -267,7 +265,7 @@ class MainWindow(QMainWindow):
         lay.addWidget(adv)
         lay.addStretch(1)
 
-        for combo in (self.c_font, self.c_case, self.c_colours, self.c_rotation, self.c_background,
+        for combo in (self.c_font, self.c_case, self.c_colours, self.c_background,
                       self.c_bubbles, self.c_per_card, self.c_sizes, self.c_card_mm):
             combo.changed.connect(self._style_changed)
         for toggle in (self.t_bold, self.t_border, self.t_numbers, self.t_guides, self.t_long_big):
@@ -521,7 +519,6 @@ class MainWindow(QMainWindow):
         self.c_font.set_value(s.font)
         self.c_case.set_value(s.letter_case)
         self.c_colours.set_value(s.word_colours)
-        self.c_rotation.set_value(s.rotation)
         self.c_background.set_value(s.background)
         self.c_bubbles.set_value(s.bubble_style)
         self.c_per_card.set_value(s.words_per_card)
@@ -540,7 +537,6 @@ class MainWindow(QMainWindow):
         s.font = self.c_font.value()
         s.letter_case = self.c_case.value()
         s.word_colours = self.c_colours.value()
-        s.rotation = self.c_rotation.value()
         s.background = self.c_background.value()
         s.bubble_style = self.c_bubbles.value()
         s.words_per_card = self.c_per_card.value()
@@ -760,9 +756,11 @@ class MainWindow(QMainWindow):
             "pile face up in the middle. Everyone turns their card over. The first to spot and "
             "<b>read out</b> the word their card shares with the middle card takes it. "
             "The player with the most cards at the end wins.</p>"
+            "<p>Words point in every direction so that everyone around the table can read "
+            "some of them - just like the cards themselves, there's no right way up.</p>"
             "<p><b>Quick tip for reluctant readers:</b> a player only wins the card when they say "
             "the word out loud, so reading becomes part of the race.</p>"
-            "<p><b>Easier games:</b> choose fewer words per card, upright words or even bubble sizes "
+            "<p><b>Easier games:</b> choose fewer words per card, even bubble sizes or long words in big bubbles "
             "on the right.</p>"))
 
     def show_about(self) -> None:

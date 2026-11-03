@@ -67,6 +67,21 @@ class DeckPlan:
         return msg
 
 
+def spread_angles(n: int, rng: random.Random) -> list[float]:
+    """Random word angles, spread all the way round the card.
+
+    Round cards are played from every side of the table, so each card needs
+    words facing every player.  The circle is split into ``n`` equal slices,
+    each word gets a random angle inside its own slice (starting from a
+    random offset), and the slices are shuffled between the words.
+    """
+    slice_ = 360.0 / n
+    offset = rng.uniform(0, 360)
+    angles = [(offset + k * slice_ + rng.uniform(0.1, 0.9) * slice_) % 360 for k in range(n)]
+    rng.shuffle(angles)
+    return angles
+
+
 def matching_layouts(layouts: list[Layout], per_card: int, bubble_sizes: str) -> list[Layout]:
     limit = SIZE_LIMITS.get(bubble_sizes, 99.0)
     return [l for l in layouts
@@ -125,14 +140,9 @@ def plan_deck(words: list[str], style: CardStyle, layouts: list[Layout]) -> Deck
         else:
             crng.shuffle(circles)
 
+        angles = spread_angles(len(word_ids), crng)
         placed = []
-        for wid, (x, y, r) in zip(word_ids, circles):
-            if style.rotation == "upright":
-                angle = 0.0
-            elif style.rotation == "gentle":
-                angle = crng.uniform(-30, 30)
-            else:
-                angle = crng.uniform(0, 360)
+        for wid, (x, y, r), angle in zip(word_ids, circles, angles):
             placed.append(PlacedWord(apply_case(chosen[wid], style.letter_case),
                                      colours[wid], angle, x, y, r))
         cards.append(CardSpec(number, placed))

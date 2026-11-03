@@ -42,12 +42,6 @@ PALETTE = [
     "#374151",  # charcoal
 ]
 
-ROTATIONS = {
-    "Fully random (challenge)": "random",
-    "Gentle tilt": "gentle",
-    "Upright (easiest)": "upright",
-}
-
 LETTER_CASES = {
     "As typed": "as_typed",
     "lowercase": "lower",
@@ -87,7 +81,6 @@ class CardStyle:
     bold: bool = False
     background: str = "#fdf6e3"
     word_colours: str = "colourful"
-    rotation: str = "random"
     letter_case: str = "as_typed"
     card_border: bool = True
     bubble_style: str = "none"

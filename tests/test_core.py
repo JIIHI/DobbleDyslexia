@@ -78,3 +78,21 @@ def test_render_card(font):
 def test_too_few_words():
     plan = plan_deck(["a", "b", "c"], CardStyle(), [])
     assert plan.cards == [] and plan.per_card is None
+
+
+def test_angles_face_every_way():
+    import random as _r
+    from wordspot.builder import spread_angles
+    for seed in range(50):
+        for n in (3, 4, 6, 8):
+            angles = sorted(spread_angles(n, _r.Random(seed)))
+            gaps = [b - a for a, b in zip(angles, angles[1:])] + [angles[0] + 360 - angles[-1]]
+            # no big empty arc: every side of the table gets a word
+            assert max(gaps) < 2 * 360 / n
+            assert all(0 <= a < 360 for a in angles)
+
+
+def test_cards_use_random_angles():
+    plan = plan_deck(BUILTIN_DECKS[0]["words"], CardStyle(seed=2), [])
+    angles = [w.angle for c in plan.cards for w in c.words]
+    assert len({round(a) for a in angles}) > 200  # genuinely varied, not one direction

@@ -40,8 +40,10 @@ to a GitHub Release, which gives a simpler download link to share.
   per card for younger or struggling readers.
 * **Reading-friendly styling:** three fonts designed for readability
   (OpenDyslexic, Lexend, Andika), cream and pastel backgrounds, colourful or
-  plain words, a choice of word angles (fully random, gentle tilt or upright),
-  lowercase or UPPERCASE, and a card border on or off.
+  plain words, lowercase or UPPERCASE, and a card border on or off.
+* **Words face every way:** round cards are played from all sides of the
+  table, so word angles are always random and spread all the way round each
+  card. Every player gets some words facing them.
 * **Download A4 PDF:** all the cards laid out 6 to a page, ready to print and cut.
 * **Download ZIP:** every card as its own PNG, plus the PDF. When a card gets
   lost or chewed, just print that one again.
