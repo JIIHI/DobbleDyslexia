@@ -100,9 +100,11 @@ computer awake while the children play.
 
 ### Put it online
 
-To play from anywhere, including family in another house, deploy the
-included `Dockerfile` to any host that runs containers, such as Fly.io,
-Render or Railway. The server keeps games in memory and needs no database.
+To play from anywhere, follow **[deploy/HOSTING-GUIDE.md](deploy/HOSTING-GUIDE.md)**.
+It sets up a small Hetzner cloud server (about €4–5 a month) with HTTPS, a
+family code, automatic security updates and nightly updates from GitHub,
+using `deploy/cloud-config.yaml`. The `Dockerfile` also works on any other
+container host.
 
 ## Running from source
 

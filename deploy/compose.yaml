@@ -1,0 +1,30 @@
+# Word Spot online on a server: the game plus Caddy, which gets a free HTTPS
+# certificate for your domain automatically.  Used by deploy/install.sh.
+services:
+  wordspot:
+    build: ..
+    restart: unless-stopped
+    environment:
+      WORDSPOT_ACCESS_CODE: ${WORDSPOT_ACCESS_CODE:-}
+      FORWARDED_ALLOW_IPS: "*"   # trust Caddy's X-Forwarded-* headers (port 8000 is not public)
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [wordspot]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

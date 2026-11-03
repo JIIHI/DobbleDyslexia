@@ -1,0 +1,15 @@
+#cloud-config
+# Paste ALL of this into the "Cloud config" box when creating the Hetzner server.
+# Change the two lines marked CHANGE THIS first.
+
+write_files:
+  - path: /root/wordspot-settings
+    permissions: "0600"
+    content: |
+      DOMAIN=play.silautron.com         # CHANGE THIS if you want a different address
+      FAMILY_CODE=pancake42             # CHANGE THIS to your own secret family code
+
+ssh_pwauth: false   # nobody can log in over the internet with a password
+
+runcmd:
+  - [bash, -c, "set -a; . /root/wordspot-settings; set +a; curl -fsSL https://raw.githubusercontent.com/JIIHI/DobbleDyslexia/word-spot-app/deploy/install.sh -o /root/install-wordspot.sh && bash /root/install-wordspot.sh > /var/log/wordspot-install.log 2>&1"]
