@@ -3,7 +3,7 @@
 
 const $ = (id) => document.getElementById(id);
 const FONT_FAMILY = { opendyslexic: "OpenDyslexic", lexend: "Lexend", andika: "Andika" };
-const BG = "#fdf6e3";
+const BG = "#fdf6e3";   // used only if the server sends no card colour
 const SVGNS = "http://www.w3.org/2000/svg";
 
 let info = { decks: [], avatars: [], join_base: location.origin };
@@ -39,11 +39,6 @@ function el(tag, attrs = {}, parent = null) {
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
   if (parent) parent.appendChild(node);
   return node;
-}
-function soft(colour, amount = 0.14) {
-  const c = parseInt(colour.slice(1), 16), b = parseInt(BG.slice(1), 16);
-  const mix = (sh) => Math.round(((b >> sh) & 255) + (((c >> sh) & 255) - ((b >> sh) & 255)) * amount);
-  return `rgb(${mix(16)},${mix(8)},${mix(0)})`;
 }
 function esc(text) {
   return String(text).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -271,7 +266,9 @@ function renderLobby() {
   setSeg("s-shape", s.shape);
   setSeg("s-per", s.words_per_card === 8 ? 0 : s.words_per_card);
   setSeg("s-font", s.font);
-  for (const id of ["s-rounds", "s-shape", "s-per", "s-font"]) $(id).classList.toggle("readonly", !host);
+  setSeg("s-colours", s.colours);
+  setSeg("s-circles", s.circles ? "on" : "off");
+  for (const id of ["s-rounds", "s-shape", "s-per", "s-font", "s-colours", "s-circles"]) $(id).classList.toggle("readonly", !host);
   sel.disabled = !host;
   $("s-custom").disabled = !host;
   $("s-custom-use").classList.toggle("hidden", !host);
@@ -306,6 +303,10 @@ function bindLobby() {
   seg("s-shape", "shape", false);
   seg("s-per", "words_per_card", true);
   seg("s-font", "font", false);
+  seg("s-colours", "colours", false);
+  for (const b of $("s-circles").children) b.onclick = () => {
+    if (isHost()) sendSettings({ circles: b.dataset.v === "on" });
+  };
   $("start").onclick = () => { unlockAudio(); editing = false; send({ type: "start" }); };
   $("leave").onclick = goHome;
 }
@@ -314,25 +315,34 @@ function bindLobby() {
 function drawCard(svg, card, font) {
   svg.innerHTML = "";
   const family = FONT_FAMILY[font] || "OpenDyslexic";
+  const bg = card.bg || BG;
+  // The bubble is always drawn - even when circles are off it is there (but
+  // see-through) so taps between the letters count and the found/wrong ring
+  // can still flash round the word.
+  const bub = (w) => {
+    const a = { class: "bub", fill: w.f || "transparent" };
+    if (card.stroke) { a.stroke = card.stroke; a["stroke-width"] = 6; }
+    return a;
+  };
   if (card.shape === "rect") {
     svg.setAttribute("viewBox", "0 0 1000 1400");
-    el("rect", { x: 6, y: 6, width: 988, height: 1388, rx: 60, fill: BG, stroke: "#2b2b2b", "stroke-width": 12 }, svg);
+    el("rect", { x: 6, y: 6, width: 988, height: 1388, rx: 60, fill: bg, stroke: "#2b2b2b", "stroke-width": 12 }, svg);
     const pad = 70, iw = 860, ih = 1260;
     for (const w of card.words) {
       const g = el("g", { class: "word", "data-word": w.w }, svg);
       const cx = pad + w.x * iw, cy = pad + w.y * ih, bw = w.bw * iw, bh = w.bh * ih;
-      el("rect", { class: "bub", x: cx - bw / 2, y: cy - bh / 2, width: bw, height: bh, rx: bh * 0.25, fill: soft(w.c) }, g);
+      el("rect", { ...bub(w), x: cx - bw / 2, y: cy - bh / 2, width: bw, height: bh, rx: bh * 0.25 }, g);
       const t = el("text", { x: cx, y: cy, "text-anchor": "middle", "dominant-baseline": "central",
         "font-family": family, "font-size": w.fs * 1000, fill: w.c }, g);
       t.textContent = w.w;
     }
   } else {
     svg.setAttribute("viewBox", "-1010 -1010 2020 2020");
-    el("circle", { cx: 0, cy: 0, r: 1000, fill: BG, stroke: "#2b2b2b", "stroke-width": 12 }, svg);
+    el("circle", { cx: 0, cy: 0, r: 1000, fill: bg, stroke: "#2b2b2b", "stroke-width": 12 }, svg);
     const K = 985;
     for (const w of card.words) {
       const g = el("g", { class: "word", "data-word": w.w, transform: `translate(${w.x * K} ${w.y * K})` }, svg);
-      el("circle", { class: "bub", cx: 0, cy: 0, r: w.r * K, fill: soft(w.c) }, g);
+      el("circle", { ...bub(w), cx: 0, cy: 0, r: w.r * K }, g);
       const t = el("text", { x: 0, y: 0, "text-anchor": "middle", "dominant-baseline": "central",
         "font-family": family, "font-size": w.fs * K, fill: w.c, transform: `rotate(${-w.a})` }, g);
       t.textContent = w.w;

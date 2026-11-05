@@ -6,7 +6,7 @@ from wordspot.builder import clean_words, plan_deck
 from wordspot.deck import DECK_SIZES, best_per_card, build_deck, check_deck
 from wordspot.layout import fit_inside, generate_layout, Layout
 from wordspot.render import render_card
-from wordspot.style import CardStyle
+from wordspot.style import PALETTE, SCHEME_COLOURS, CardStyle
 from wordspot.wordlists import BUILTIN_DECKS
 
 
@@ -110,3 +110,31 @@ def test_rectangular_cards_have_upright_words(per_card):
     img = render_card(plan.cards[0], style, 300)
     assert img.size == (300, 420)
     assert img.getpixel((150, 210))[3] == 255
+
+
+@pytest.mark.parametrize("scheme", sorted(SCHEME_COLOURS))
+def test_colour_schemes(scheme):
+    words = BUILTIN_DECKS[0]["words"]
+    plan = plan_deck(words, CardStyle(seed=5, word_colours=scheme), [])
+    used = {w.colour for c in plan.cards for w in c.words}
+    allowed = set(SCHEME_COLOURS[scheme])
+    assert used <= allowed
+    if len(allowed) > 1:
+        assert len(used) > 1          # colourful schemes really use several colours
+    # same seed -> same colours, so reprinted cards still match
+    again = plan_deck(words, CardStyle(seed=5, word_colours=scheme), [])
+    assert [[w.colour for w in c.words] for c in plan.cards] == \
+        [[w.colour for w in c.words] for c in again.cards]
+
+
+@pytest.mark.parametrize("scheme", ["colourful", "bright", "pastel", "black", "grey", "navy"])
+def test_scheme_renders_with_soft_bubbles(scheme):
+    plan = plan_deck(BUILTIN_DECKS[0]["words"], CardStyle(seed=3, word_colours=scheme,
+                                                          bubble_style="soft"), [])
+    img = render_card(plan.cards[0], CardStyle(word_colours=scheme, bubble_style="soft"), 200)
+    assert img.width == 200
+
+
+def test_unknown_scheme_falls_back_to_colourful():
+    plan = plan_deck(BUILTIN_DECKS[0]["words"], CardStyle(seed=5, word_colours="nope"), [])
+    assert {w.colour for c in plan.cards for w in c.words} <= set(PALETTE)
