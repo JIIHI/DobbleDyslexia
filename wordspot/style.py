@@ -16,10 +16,24 @@ FONTS = {
 BACKGROUNDS = {
     "Cream": "#fdf6e3",
     "White": "#ffffff",
-    "Pale yellow": "#fff9c4",
+    "Pale grey": "#eef0f3",
     "Pale blue": "#e3f2fd",
     "Pale green": "#e8f5e9",
     "Pale pink": "#fce4ec",
+    "Pale yellow": "#fff9c4",
+    "Lilac": "#f1ebfa",
+}
+
+# Card colours offered in the online game: key -> colour.
+CARD_COLOURS = {
+    "cream": "#fdf6e3",
+    "white": "#ffffff",
+    "grey": "#eef0f3",
+    "blue": "#e3f2fd",
+    "green": "#e8f5e9",
+    "pink": "#fce4ec",
+    "yellow": "#fff9c4",
+    "lilac": "#f1ebfa",
 }
 
 WORD_COLOURS = {

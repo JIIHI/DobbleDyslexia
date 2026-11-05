@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from wordspot.builder import DeckPlan, clean_words, plan_deck
 from wordspot.layout import Layout
 from wordspot.render import CardSpec, fit_box_font_size, fit_font_size
-from wordspot.style import RECT_RATIO, CardStyle, bubble_tint, soft_colour
+from wordspot.style import CARD_COLOURS, RECT_RATIO, CardStyle, bubble_tint, soft_colour
 from wordspot.wordlists import BUILTIN_DECKS
 
 WRONG_FREEZE = 1.5      # seconds a player is frozen after a wrong tap
@@ -65,11 +65,13 @@ class Settings:
     words_per_card: int = 0
     colours: str = "colourful"
     circles: bool = True
+    background: str = "cream"
 
     def public(self) -> dict:
         return {"deck": self.deck, "custom_count": len(self.custom_words), "rounds": self.rounds,
                 "shape": self.shape, "font": self.font, "words_per_card": self.words_per_card,
-                "colours": self.colours, "circles": self.circles}
+                "colours": self.colours, "circles": self.circles,
+                "background": self.background}
 
 
 # Colour schemes offered in the online game (navy is desktop-only for now).
@@ -88,7 +90,7 @@ def game_style(s: Settings, seed: int) -> CardStyle:
     return CardStyle(seed=seed, card_shape=s.shape, font=s.font,
                      words_per_card=s.words_per_card, word_colours=s.colours,
                      bubble_style=bubbles,
-                     background="#ffffff" if s.colours == "bw" else "#fdf6e3")
+                     background=CARD_COLOURS.get(s.background, CARD_COLOURS["cream"]))
 
 
 def card_payload(card: CardSpec, style: CardStyle) -> dict:
@@ -209,6 +211,10 @@ class Room:
             s.words_per_card = data["words_per_card"]
         if data.get("colours") in ONLINE_COLOURS:
             s.colours = data["colours"]
+            if s.colours == "bw" and "background" not in data:
+                s.background = "white"     # black & white starts on a white card
+        if data.get("background") in CARD_COLOURS:
+            s.background = data["background"]
         if isinstance(data.get("circles"), bool):
             s.circles = data["circles"]
 

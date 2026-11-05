@@ -194,3 +194,23 @@ def test_print_deck_pdf():
         assert res.content.startswith(b"%PDF")
         assert "Own_words" in res.headers["content-disposition"]
         assert client.get("/print/ZZZZ.pdf").status_code == 404
+
+
+def test_card_colour_setting():
+    from wordspot.style import CARD_COLOURS
+    room = Lobby(load_layouts()).create()
+    sam = room.add_player("Sam", "🐶")
+    ava = room.add_player("Ava", "🐸")
+    assert room.settings.background == "cream"
+    room.update_settings(ava.id, {"background": "blue"})        # not the host
+    room.update_settings(sam.id, {"background": "purple"})      # not an option
+    assert room.settings.background == "cream"
+    room.update_settings(sam.id, {"background": "grey"})
+    assert room.public_state()["settings"]["background"] == "grey"
+    room.update_settings(sam.id, {"colours": "bw"})             # black & white -> white card
+    assert room.settings.background == "white"
+    room.update_settings(sam.id, {"background": "blue"})        # ...but can still be changed
+    room.start(sam.id)
+    card = room.cards[0]
+    assert card["bg"] == CARD_COLOURS["blue"]
+    assert room.print_deck()[1].background == CARD_COLOURS["blue"]

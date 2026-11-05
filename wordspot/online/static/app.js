@@ -269,7 +269,10 @@ function renderLobby() {
   setSeg("s-font", s.font);
   setSeg("s-colours", s.colours);
   setSeg("s-circles", s.circles ? "on" : "off");
-  for (const id of ["s-rounds", "s-shape", "s-per", "s-font", "s-colours", "s-circles"]) $(id).classList.toggle("readonly", !host);
+  setSeg("s-bg", s.background);
+  const bgBtn = $("s-bg").querySelector(`[data-v="${s.background}"]`);
+  if (bgBtn) $("s-colours").style.setProperty("--card-bg", bgBtn.dataset.hex);   // preview "abc" on that card colour
+  for (const id of ["s-rounds", "s-shape", "s-per", "s-font", "s-colours", "s-bg", "s-circles"]) $(id).classList.toggle("readonly", !host);
   sel.disabled = !host;
   $("s-custom").disabled = !host;
   $("s-custom-use").classList.toggle("hidden", !host);
@@ -305,6 +308,7 @@ function bindLobby() {
   seg("s-per", "words_per_card", true);
   seg("s-font", "font", false);
   seg("s-colours", "colours", false);
+  seg("s-bg", "background", false);
   for (const b of $("s-circles").children) b.onclick = () => {
     if (isHost()) sendSettings({ circles: b.dataset.v === "on" });
   };
