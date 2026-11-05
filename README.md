@@ -98,6 +98,20 @@ or Chrome on each iPad, phone or computer on the same wifi. On an iPad, tap
 *Share*, then *Add to Home Screen*, and it opens like an app. Keep the
 computer awake while the children play.
 
+### Keep it running on a Mac that stays on (e.g. Roony)
+
+Paste this into Terminal on the Mac:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JIIHI/DobbleDyslexia/word-spot-app/deploy/mac/install-roony.sh | bash
+```
+
+It installs the game server into `~/word-spot` (Python environment in
+`~/PythonEnv/word-spot`), starts it in the background whenever the Mac is
+logged in, restarts it if it stops, and prints the address for the iPads,
+for example `http://roony.local:8000`. Run the same line again to update.
+`deploy/mac/uninstall-roony.sh` stops it.
+
 ### Put it online
 
 To play from anywhere, follow **[deploy/HOSTING-GUIDE.md](deploy/HOSTING-GUIDE.md)**.
