@@ -174,3 +174,23 @@ def test_card_payload_reflects_colours_and_circles(shape, colours, circles):
 def test_pastel_bubbles_are_stronger():
     from wordspot.style import bubble_tint
     assert bubble_tint("pastel") > bubble_tint("colourful") > bubble_tint("black")
+
+
+def test_print_deck_pdf():
+    from fastapi.testclient import TestClient
+    from wordspot.online import server
+    room = server.lobby.create()
+    sam = room.add_player("Sam", "🐶")
+    room.update_settings(sam.id, {"deck": "custom", "custom_words": list("abcdefg"),
+                                  "colours": "pastel", "circles": False, "shape": "rect"})
+    plan, style, title = room.print_deck()
+    assert len(plan.cards) == 7 and title == "Own words"
+    assert style.word_colours == "pastel" and style.bubble_style == "none"
+    assert style.card_shape == "rect"
+    with TestClient(server.app) as client:
+        res = client.get(f"/print/{room.code}.pdf")
+        assert res.status_code == 200
+        assert res.headers["content-type"] == "application/pdf"
+        assert res.content.startswith(b"%PDF")
+        assert "Own_words" in res.headers["content-disposition"]
+        assert client.get("/print/ZZZZ.pdf").status_code == 404

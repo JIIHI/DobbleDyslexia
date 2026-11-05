@@ -255,6 +255,7 @@ function renderLobby() {
     $("qr").dataset.link = link;
   }
   $("join-link").textContent = link;
+  $("print").href = `/print/${state.room}.pdf`;
   $("players").innerHTML = state.players.map((p) =>
     `<li class="${p.connected ? "" : "away"}"><span class="av">${p.avatar}</span>${esc(p.name)}${p.id === state.host ? " ⭐" : ""}</li>`).join("");
 
@@ -309,6 +310,7 @@ function bindLobby() {
   };
   $("start").onclick = () => { unlockAudio(); editing = false; send({ type: "start" }); };
   $("leave").onclick = goHome;
+  $("print").onclick = () => toast("Making your cards - this takes a few seconds…", 6000);
 }
 
 /* ----------------------------------------------------------------- cards */

@@ -13,7 +13,7 @@ import secrets
 import time
 from dataclasses import dataclass, field
 
-from wordspot.builder import clean_words, plan_deck
+from wordspot.builder import DeckPlan, clean_words, plan_deck
 from wordspot.layout import Layout
 from wordspot.render import CardSpec, fit_box_font_size, fit_font_size
 from wordspot.style import RECT_RATIO, CardStyle, bubble_tint, soft_colour
@@ -129,6 +129,12 @@ def card_payload(card: CardSpec, style: CardStyle) -> dict:
     return payload
 
 
+def deck_title(s: Settings) -> str:
+    if s.deck == "custom":
+        return "Own words"
+    return next((d["name"] for d in BUILTIN_DECKS if d["key"] == s.deck), "Word Spot")
+
+
 class Room:
     def __init__(self, code: str, layouts: list[Layout]):
         self.code = code
@@ -225,6 +231,13 @@ class Room:
         self.total_rounds = s.rounds or len(self._order) // 2
         self.total_rounds = min(self.total_rounds, len(self._order) // 2)
         self._next_round()
+
+    def print_deck(self) -> tuple[DeckPlan, CardStyle, str]:
+        """The whole deck, with this room's current settings, ready to print."""
+        s = self.settings
+        words = s.custom_words if s.deck == "custom" else deck_words(s.deck)
+        style = game_style(s, random.randint(1, 10**9))
+        return plan_deck(words or [], style, self.layouts), style, deck_title(s)
 
     def _next_round(self) -> None:
         self.round += 1

@@ -89,6 +89,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6366f1
 .small-btn { margin-top: 6px; padding: 8px 14px; border-radius: 10px; border: 2px solid #c7d2fe;
   background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; }
 textarea { font-size: 1rem; resize: vertical; }
+.print-link { display: block; text-align: center; margin-top: 18px; padding: 12px; border-radius: 14px;
+  border: 2px dashed #c7d2fe; color: var(--accent-dark); font-weight: 700; text-decoration: none; }
+.print-link:active { transform: scale(0.98); }
 .lobby-buttons { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 20px; }
 
 /* game */
