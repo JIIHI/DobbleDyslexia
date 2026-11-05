@@ -16,15 +16,32 @@ FONTS = {
 BACKGROUNDS = {
     "Cream": "#fdf6e3",
     "White": "#ffffff",
-    "Pale yellow": "#fff9c4",
+    "Pale grey": "#eef0f3",
     "Pale blue": "#e3f2fd",
     "Pale green": "#e8f5e9",
     "Pale pink": "#fce4ec",
+    "Pale yellow": "#fff9c4",
+    "Lilac": "#f1ebfa",
+}
+
+# Card colours offered in the online game: key -> colour.
+CARD_COLOURS = {
+    "cream": "#fdf6e3",
+    "white": "#ffffff",
+    "grey": "#eef0f3",
+    "blue": "#e3f2fd",
+    "green": "#e8f5e9",
+    "pink": "#fce4ec",
+    "yellow": "#fff9c4",
+    "lilac": "#f1ebfa",
 }
 
 WORD_COLOURS = {
     "Colourful": "colourful",
+    "Bright": "bright",
+    "Pastel": "pastel",
     "All black": "black",
+    "All dark grey": "grey",
     "All dark blue": "navy",
 }
 
@@ -41,6 +58,68 @@ PALETTE = [
     "#4338ca",  # indigo
     "#374151",  # charcoal
 ]
+
+# Strong, vivid colours - still readable on the pale backgrounds.
+PALETTE_BRIGHT = [
+    "#0061ff",  # blue
+    "#e00000",  # red
+    "#008a2e",  # green
+    "#9b00e8",  # purple
+    "#e05200",  # orange
+    "#00838f",  # teal
+    "#e6007a",  # pink
+    "#b35c00",  # amber
+    "#4f3cff",  # violet
+    "#0077b6",  # sea blue
+]
+
+# Softer mid-tones - gentler on the eye but still readable as text.
+PALETTE_PASTEL = [
+    "#5b8bd9",  # blue
+    "#d06560",  # red
+    "#3f9660",  # green
+    "#a07bd6",  # purple
+    "#c67a3f",  # orange
+    "#33958f",  # teal
+    "#c7629a",  # pink
+    "#b08850",  # sand
+    "#7c83db",  # periwinkle
+    "#7b8794",  # slate
+]
+
+# Word colour scheme -> the colours the words are drawn in.
+SCHEME_COLOURS = {
+    "colourful": PALETTE,
+    "bright": PALETTE_BRIGHT,
+    "pastel": PALETTE_PASTEL,
+    "black": ["#111111"],
+    "grey": ["#4b5563"],
+    "navy": ["#1e3a8a"],
+    "bw": ["#000000"],
+}
+
+# How strongly the word colour tints the soft bubble behind it (0 = invisible).
+BUBBLE_TINT = {
+    "colourful": 0.13,
+    "bright": 0.12,
+    "pastel": 0.30,
+    "black": 0.08,
+    "grey": 0.08,
+    "navy": 0.10,
+    "bw": 0.0,
+}
+
+
+def bubble_tint(word_colours: str) -> float:
+    return BUBBLE_TINT.get(word_colours, 0.13)
+
+
+def soft_colour(colour: str, background: str, amount: float) -> str:
+    """The word colour mixed into the background, as ``#rrggbb``."""
+    c = [int(colour.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    b = [int(background.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(b[i] + (c[i] - b[i]) * amount):02x}" for i in range(3))
+
 
 CARD_SHAPES = {
     "Round - group play (words face every way)": "round",

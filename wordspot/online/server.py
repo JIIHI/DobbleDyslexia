@@ -60,6 +60,8 @@ class RateLimiter:
 create_limit = RateLimiter(8, 60)     # new games per IP per minute
 lookup_limit = RateLimiter(30, 60)    # game-code lookups / joins per IP per minute
 code_limit = RateLimiter(10, 300)     # family-code guesses per IP per 5 minutes
+print_limit = RateLimiter(4, 120)     # printable decks per IP per 2 minutes
+print_slots = asyncio.Semaphore(2)    # decks being made at once (each takes a few seconds)
 
 
 def client_ip(request) -> str:
@@ -206,6 +208,29 @@ async def room_info(code: str, request: Request) -> dict:
     if not room:
         raise HTTPException(404, "No game with that code")
     return {"code": room.code, "phase": room.phase, "players": room.connected_count()}
+
+
+def make_pdf(room: Room) -> tuple[bytes, str]:
+    from wordspot.export import render_cards, safe_name, write_pdf
+    plan, style, title = room.print_deck()
+    images = render_cards(plan.cards, style, len(plan.cards))
+    buf = io.BytesIO()
+    write_pdf(buf, images, style, title)
+    return buf.getvalue(), safe_name(f"Word Spot - {title}")
+
+
+@app.get("/print/{code}.pdf")
+async def print_deck(code: str, request: Request) -> Response:
+    """The whole deck as an A4 PDF, using the game's current settings."""
+    if not print_limit.allow(client_ip(request)):
+        raise HTTPException(429, "Too many decks - wait a couple of minutes.")
+    room = lobby.get(code)
+    if not room:
+        raise HTTPException(404, "No game with that code")
+    async with print_slots:
+        pdf, name = await asyncio.to_thread(make_pdf, room)
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{name}.pdf"'})
 
 
 @app.get("/qr.svg")

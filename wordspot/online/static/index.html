@@ -96,6 +96,27 @@
             </div>
           </div>
         </div>
+        <div class="field-label">Colours</div>
+        <div class="seg wrap" id="s-colours">
+              <button data-v="colourful" class="sw sw-colourful"><span class="sw-abc"><span style="color:#1d4ed8">a</span><span style="color:#b91c1c">b</span><span style="color:#15803d">c</span></span><span class="sw-label">Colourful</span></button>
+              <button data-v="bright" class="sw sw-bright"><span class="sw-abc"><span style="color:#0061ff">a</span><span style="color:#e00000">b</span><span style="color:#008a2e">c</span></span><span class="sw-label">Bright</span></button>
+              <button data-v="pastel" class="sw sw-pastel"><span class="sw-abc"><span style="color:#5b8bd9">a</span><span style="color:#d06560">b</span><span style="color:#3f9660">c</span></span><span class="sw-label">Pastel</span></button>
+              <button data-v="black" class="sw sw-black"><span class="sw-abc"><span style="color:#111111">a</span><span style="color:#111111">b</span><span style="color:#111111">c</span></span><span class="sw-label">Black</span></button>
+              <button data-v="grey" class="sw sw-grey"><span class="sw-abc"><span style="color:#4b5563">a</span><span style="color:#4b5563">b</span><span style="color:#4b5563">c</span></span><span class="sw-label">Grey</span></button>
+              <button data-v="bw" class="sw sw-bw"><span class="sw-abc"><span style="color:#000000">a</span><span style="color:#000000">b</span><span style="color:#000000">c</span></span><span class="sw-label">Black &amp; white</span></button>
+        </div>
+        <div class="field-label">Card colour</div>
+        <div class="seg wrap four" id="s-bg">
+              <button data-v="cream" data-hex="#fdf6e3" class="sw"><span class="dot" style="background:#fdf6e3"></span><span class="sw-label">Cream</span></button><button data-v="white" data-hex="#ffffff" class="sw"><span class="dot" style="background:#ffffff"></span><span class="sw-label">White</span></button><button data-v="grey" data-hex="#eef0f3" class="sw"><span class="dot" style="background:#eef0f3"></span><span class="sw-label">Grey</span></button><button data-v="blue" data-hex="#e3f2fd" class="sw"><span class="dot" style="background:#e3f2fd"></span><span class="sw-label">Blue</span></button><button data-v="green" data-hex="#e8f5e9" class="sw"><span class="dot" style="background:#e8f5e9"></span><span class="sw-label">Green</span></button><button data-v="pink" data-hex="#fce4ec" class="sw"><span class="dot" style="background:#fce4ec"></span><span class="sw-label">Pink</span></button><button data-v="yellow" data-hex="#fff9c4" class="sw"><span class="dot" style="background:#fff9c4"></span><span class="sw-label">Yellow</span></button><button data-v="lilac" data-hex="#f1ebfa" class="sw"><span class="dot" style="background:#f1ebfa"></span><span class="sw-label">Lilac</span></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="field-label">Circles behind words</div>
+            <div class="seg" id="s-circles">
+              <button data-v="on">◯ On</button><button data-v="off">Off</button>
+            </div>
+          </div>
+        </div>
       </div>
       <p id="settings-readonly" class="hint hidden"></p>
       <div class="lobby-buttons">
@@ -103,6 +124,8 @@
         <button id="start" class="big primary">Start!</button>
       </div>
       <p id="wait-msg" class="hint hidden">Waiting for the first player to press Start…</p>
+      <a id="print" class="print-link" target="_blank" rel="noopener">🖨️ Print these cards</a>
+      <p class="hint">Makes a PDF of the whole deck, with the words, letters and colours above, ready to print on A4 and cut out.</p>
     </div>
   </div>
 </section>

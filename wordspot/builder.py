@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from wordspot.deck import DECK_SIZES, best_per_card, build_deck
 from wordspot.layout import Layout, generate_layout
 from wordspot.render import CardSpec, PlacedWord
-from wordspot.style import PALETTE, CardStyle
+from wordspot.style import PALETTE, SCHEME_COLOURS, CardStyle
 
 # Biggest-to-smallest bubble ratio allowed by each "bubble sizes" choice.
 SIZE_LIMITS = {"mixed": 99.0, "even": 1.3, "same": 1.08}
@@ -115,14 +115,9 @@ def plan_deck(words: list[str], style: CardStyle, layouts: list[Layout]) -> Deck
     rng.shuffle(chosen)
 
     colour_rng = random.Random(f"{seed}:colours")
-    palette = PALETTE[:]
+    palette = list(SCHEME_COLOURS.get(style.word_colours, PALETTE))
     colour_rng.shuffle(palette)
-    if style.word_colours == "black":
-        colours = ["#111111"] * needed
-    elif style.word_colours == "navy":
-        colours = ["#1e3a8a"] * needed
-    else:
-        colours = [palette[i % len(palette)] for i in range(needed)]
+    colours = [palette[i % len(palette)] for i in range(needed)]
 
     pool = matching_layouts(layouts, per_card, style.bubble_sizes)
     template = build_deck(per_card)

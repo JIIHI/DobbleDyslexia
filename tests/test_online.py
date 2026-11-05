@@ -124,3 +124,93 @@ def test_room_cap():
         lobby.create().add_player("x", "🐶")
     with pytest.raises(RuntimeError):
         lobby.create()
+
+
+def test_colour_and_circle_settings():
+    room = Lobby(load_layouts()).create()
+    sam = room.add_player("Sam", "🐶")
+    ava = room.add_player("Ava", "🐸")
+    assert room.settings.colours == "colourful" and room.settings.circles is True
+
+    room.update_settings(ava.id, {"colours": "pastel", "circles": False})   # not the host
+    assert room.settings.colours == "colourful" and room.settings.circles is True
+
+    room.update_settings(sam.id, {"colours": "rainbow", "circles": "yes"})  # nonsense ignored
+    assert room.settings.colours == "colourful" and room.settings.circles is True
+
+    room.update_settings(sam.id, {"colours": "pastel", "circles": False})
+    pub = room.public_state()["settings"]
+    assert pub["colours"] == "pastel" and pub["circles"] is False
+
+
+@pytest.mark.parametrize("shape", ["round", "rect"])
+@pytest.mark.parametrize("colours,circles", [
+    ("colourful", True), ("colourful", False), ("bright", True), ("pastel", True),
+    ("black", True), ("grey", False), ("bw", True), ("bw", False)])
+def test_card_payload_reflects_colours_and_circles(shape, colours, circles):
+    from wordspot.style import SCHEME_COLOURS
+    room = Lobby(load_layouts()).create()
+    sam = room.add_player("Sam", "🐶")
+    room.update_settings(sam.id, {"shape": shape, "colours": colours, "circles": circles})
+    room.start(sam.id)
+    card = room.cards[0]
+    assert card["shape"] == shape
+    assert card["bg"] == ("#ffffff" if colours == "bw" else "#fdf6e3")
+    for w in card["words"]:
+        assert w["c"] in SCHEME_COLOURS[colours]
+    if not circles:
+        assert card["bubbles"] == "none"
+        assert all(w["f"] == "transparent" for w in card["words"])   # still tappable
+        assert "stroke" not in card
+    elif colours == "bw":
+        assert card["bubbles"] == "outline" and card["stroke"]
+        assert all(w["f"] == "#ffffff" for w in card["words"])
+    else:
+        assert card["bubbles"] == "soft"
+        assert all(w["f"].startswith("#") and w["f"] not in (card["bg"], w["c"])
+                   for w in card["words"])
+
+
+def test_pastel_bubbles_are_stronger():
+    from wordspot.style import bubble_tint
+    assert bubble_tint("pastel") > bubble_tint("colourful") > bubble_tint("black")
+
+
+def test_print_deck_pdf():
+    from fastapi.testclient import TestClient
+    from wordspot.online import server
+    room = server.lobby.create()
+    sam = room.add_player("Sam", "🐶")
+    room.update_settings(sam.id, {"deck": "custom", "custom_words": list("abcdefg"),
+                                  "colours": "pastel", "circles": False, "shape": "rect"})
+    plan, style, title = room.print_deck()
+    assert len(plan.cards) == 7 and title == "Own words"
+    assert style.word_colours == "pastel" and style.bubble_style == "none"
+    assert style.card_shape == "rect"
+    with TestClient(server.app) as client:
+        res = client.get(f"/print/{room.code}.pdf")
+        assert res.status_code == 200
+        assert res.headers["content-type"] == "application/pdf"
+        assert res.content.startswith(b"%PDF")
+        assert "Own_words" in res.headers["content-disposition"]
+        assert client.get("/print/ZZZZ.pdf").status_code == 404
+
+
+def test_card_colour_setting():
+    from wordspot.style import CARD_COLOURS
+    room = Lobby(load_layouts()).create()
+    sam = room.add_player("Sam", "🐶")
+    ava = room.add_player("Ava", "🐸")
+    assert room.settings.background == "cream"
+    room.update_settings(ava.id, {"background": "blue"})        # not the host
+    room.update_settings(sam.id, {"background": "purple"})      # not an option
+    assert room.settings.background == "cream"
+    room.update_settings(sam.id, {"background": "grey"})
+    assert room.public_state()["settings"]["background"] == "grey"
+    room.update_settings(sam.id, {"colours": "bw"})             # black & white -> white card
+    assert room.settings.background == "white"
+    room.update_settings(sam.id, {"background": "blue"})        # ...but can still be changed
+    room.start(sam.id)
+    card = room.cards[0]
+    assert card["bg"] == CARD_COLOURS["blue"]
+    assert room.print_deck()[1].background == CARD_COLOURS["blue"]

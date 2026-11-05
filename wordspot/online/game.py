@@ -13,10 +13,10 @@ import secrets
 import time
 from dataclasses import dataclass, field
 
-from wordspot.builder import clean_words, plan_deck
+from wordspot.builder import DeckPlan, clean_words, plan_deck
 from wordspot.layout import Layout
 from wordspot.render import CardSpec, fit_box_font_size, fit_font_size
-from wordspot.style import RECT_RATIO, CardStyle
+from wordspot.style import CARD_COLOURS, RECT_RATIO, CardStyle, bubble_tint, soft_colour
 from wordspot.wordlists import BUILTIN_DECKS
 
 WRONG_FREEZE = 1.5      # seconds a player is frozen after a wrong tap
@@ -63,16 +63,49 @@ class Settings:
     shape: str = "round"
     font: str = "opendyslexic"
     words_per_card: int = 0
+    colours: str = "colourful"
+    circles: bool = True
+    background: str = "cream"
 
     def public(self) -> dict:
         return {"deck": self.deck, "custom_count": len(self.custom_words), "rounds": self.rounds,
-                "shape": self.shape, "font": self.font, "words_per_card": self.words_per_card}
+                "shape": self.shape, "font": self.font, "words_per_card": self.words_per_card,
+                "colours": self.colours, "circles": self.circles,
+                "background": self.background}
+
+
+# Colour schemes offered in the online game (navy is desktop-only for now).
+ONLINE_COLOURS = ("colourful", "bright", "pastel", "black", "grey", "bw")
+OUTLINE_STROKE = "#1f2937"   # thin dark ring round each word in black & white
+
+
+def game_style(s: Settings, seed: int) -> CardStyle:
+    """The card style for a game with these settings."""
+    if not s.circles:
+        bubbles = "none"
+    elif s.colours == "bw":
+        bubbles = "outline"
+    else:
+        bubbles = "soft"
+    return CardStyle(seed=seed, card_shape=s.shape, font=s.font,
+                     words_per_card=s.words_per_card, word_colours=s.colours,
+                     bubble_style=bubbles,
+                     background=CARD_COLOURS.get(s.background, CARD_COLOURS["cream"]))
 
 
 def card_payload(card: CardSpec, style: CardStyle) -> dict:
     """What a device needs to draw a card.  Font sizes are worked out here
     with the same font files the browser uses, as a fraction of the card."""
     words = []
+    tint = bubble_tint(style.word_colours)
+
+    def fill(colour: str) -> str:
+        if style.bubble_style == "soft":
+            return soft_colour(colour, style.background, tint)
+        if style.bubble_style == "outline":
+            return "#ffffff"
+        return "transparent"
+
     if style.card_shape == "rect":
         # Same geometry as the printed rectangular cards (see render.py).
         W = 1000
@@ -83,14 +116,25 @@ def card_payload(card: CardSpec, style: CardStyle) -> dict:
                    for w in card.words)
         for w in card.words:
             words.append({"w": w.word, "c": w.colour, "x": w.x, "y": w.y, "bw": w.w, "bh": w.h,
-                          "a": 0, "fs": size / W})
+                          "a": 0, "fs": size / W, "f": fill(w.colour)})
     else:
         for w in card.words:
             ref = 1000
             fs = fit_font_size(w.word, style.font, style.bold, int(w.r * ref)) / ref
             words.append({"w": w.word, "c": w.colour, "x": round(w.x, 4), "y": round(w.y, 4),
-                          "r": round(w.r, 4), "a": round(w.angle, 1), "fs": round(fs, 4)})
-    return {"shape": style.card_shape, "words": words}
+                          "r": round(w.r, 4), "a": round(w.angle, 1), "fs": round(fs, 4),
+                          "f": fill(w.colour)})
+    payload = {"shape": style.card_shape, "bg": style.background,
+               "bubbles": style.bubble_style, "words": words}
+    if style.bubble_style == "outline":
+        payload["stroke"] = OUTLINE_STROKE
+    return payload
+
+
+def deck_title(s: Settings) -> str:
+    if s.deck == "custom":
+        return "Own words"
+    return next((d["name"] for d in BUILTIN_DECKS if d["key"] == s.deck), "Word Spot")
 
 
 class Room:
@@ -165,6 +209,14 @@ class Room:
             s.font = data["font"]
         if data.get("words_per_card") in (0, 3, 4, 6, 8):
             s.words_per_card = data["words_per_card"]
+        if data.get("colours") in ONLINE_COLOURS:
+            s.colours = data["colours"]
+            if s.colours == "bw" and "background" not in data:
+                s.background = "white"     # black & white starts on a white card
+        if data.get("background") in CARD_COLOURS:
+            s.background = data["background"]
+        if isinstance(data.get("circles"), bool):
+            s.circles = data["circles"]
 
     # -------------------------------------------------------------- game
     def start(self, player_id: str) -> None:
@@ -172,9 +224,7 @@ class Room:
             return
         s = self.settings
         words = s.custom_words if s.deck == "custom" else deck_words(s.deck)
-        style = CardStyle(seed=random.randint(1, 10**9), card_shape=s.shape, font=s.font,
-                          words_per_card=s.words_per_card, bubble_style="soft",
-                          background="#fdf6e3")
+        style = game_style(s, random.randint(1, 10**9))
         plan = plan_deck(words or [], style, self.layouts)
         if len(plan.cards) < 2:
             return
@@ -187,6 +237,13 @@ class Room:
         self.total_rounds = s.rounds or len(self._order) // 2
         self.total_rounds = min(self.total_rounds, len(self._order) // 2)
         self._next_round()
+
+    def print_deck(self) -> tuple[DeckPlan, CardStyle, str]:
+        """The whole deck, with this room's current settings, ready to print."""
+        s = self.settings
+        words = s.custom_words if s.deck == "custom" else deck_words(s.deck)
+        style = game_style(s, random.randint(1, 10**9))
+        return plan_deck(words or [], style, self.layouts), style, deck_title(s)
 
     def _next_round(self) -> None:
         self.round += 1

@@ -9,7 +9,7 @@ from functools import lru_cache
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 
 from wordspot.paths import fonts_dir
-from wordspot.style import RECT_RATIO, CardStyle
+from wordspot.style import RECT_RATIO, CardStyle, bubble_tint
 
 SUPERSAMPLE = 2
 TEXT_FIT = 0.92  # share of a bubble's diameter a word may span (corner to corner)
@@ -122,7 +122,7 @@ def render_card(card: CardSpec, style: CardStyle, size_px: int,
                          width=max(1, round(size * 0.003)))
         elif style.bubble_style == "soft":
             draw.ellipse((bx - br, by - br, bx + br, by + br),
-                         fill=_soft(pw.colour, style.background))
+                         fill=_soft(pw.colour, style.background, bubble_tint(style.word_colours)))
 
         font_size = fit_font_size(pw.word, style.font, style.bold, int(br))
         font = get_font(style.font, style.bold, font_size)
@@ -176,7 +176,7 @@ def _render_rect(card: CardSpec, style: CardStyle, width_px: int,
                                    width=max(1, round(W * 0.003)))
         elif style.bubble_style == "soft":
             draw.rounded_rectangle(box, radius=round(bh * 0.25),
-                                   fill=_soft(pw.colour, style.background))
+                                   fill=_soft(pw.colour, style.background, bubble_tint(style.word_colours)))
         draw.text((cx, cy), pw.word, font=get_font(style.font, style.bold, size),
                   fill=pw.colour, anchor="mm")
 
